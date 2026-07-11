@@ -1,8 +1,13 @@
+mkdir -p "$OPENWRT/package"
+git clone --depth=1 https://github.com/eamonxg/luci-theme-aurora "$OPENWRT/package/luci-theme-aurora"
+git clone --depth=1 https://github.com/eamonxg/luci-app-aurora-config "$OPENWRT/package/luci-app-aurora-config"
+echo "  → Third-party packages (aurora) cloned"
+
 #!/bin/bash
 # DIY Part 1: X1 Pro device setup
 # 原则：最小化侵入，只 patch 不改写上游文件
 # 幂等设计：重复运行不会重复追加条目
-# 说明：第三方包（aurora/bandix）已移除，仅保留原生 feeds 包
+# 说明：aurora 主题通过 git clone 引入（eamonxg 第三方包）
 set -euo pipefail
 
 WORKSPACE="$GITHUB_WORKSPACE"
