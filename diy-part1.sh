@@ -79,37 +79,36 @@ with open(f, "w") as fh:
   fi
 fi
 
-# 6. Patch 02_network — MAC 设置修复（幂等）
-#    内核 DSA 驱动通过 nvmem 读取 eth0/eth1 MAC 失败（返回全 FF），
-#    导致 eth0/eth1 显示全 FF。直接读 bdinfo 覆盖（wan_mac/lan_mac 是 local 变量不可见）。
+# 6. Patch 02_network — MAC 地址修复（从 Factory 分区读取）
+#    根据实际硬件数据，MAC 地址存储在 Factory 分区偏移 0xe000 处
+#    eth0 (WAN): 偏移 0xe000, eth1 (LAN): 偏移 0xe000 + 1
 if [ -f "$NETWORK_FILE" ]; then
   if ! grep -q "X1 Pro MAC fix" "$NETWORK_FILE"; then
-    python3 -c "
+    python3 - << 'PYEOF' "$NETWORK_FILE"
 import sys
-f = sys.argv[1]
-with open(f) as fh:
-    content = fh.read()
+f = open(sys.argv[1])
+content = f.read()
+f.close()
 old = 'exit 0'
-new = '''
-# X1 Pro MAC fix: kernel DSA driver fails to read MAC via nvmem for eth0/eth1,
-# resulting in all-Fs. Re-read from bdinfo (wan_mac/lan_mac are local vars
-# inside mediatek_setup_macs, not visible here).
+new = """
+# X1 Pro MAC fix: read MAC from Factory partition offset 0xe000
+# eth0 (WAN) = base MAC, eth1 (LAN) = base MAC + 1
 case $board in
 oray,x1pro-v1|oray,x1pro-v1-ubootmod)
-\t_x1_wan=\\$(mtd_get_mac_binary bdinfo 0xde00)
-\tif [ -n \"\$_x1_wan\" ]; then
-\t\tip link set eth0 address \"\$_x1_wan\" 2>/dev/null
-\t\tip link set eth1 address \"\\$(macaddr_add \"\$_x1_wan\" 1)\" 2>/dev/null
+\t_x1_wan=$(mtd_get_mac_binary Factory 0xe000)
+\tif [ -n "$_x1_wan" ]; then
+\t\tip link set eth0 address "$_x1_wan" 2>/dev/null
+\t\tip link set eth1 address "$(macaddr_add "$_x1_wan" 1)" 2>/dev/null
 \tfi
 \t;;
 esac
 
-exit 0'''
+exit 0"""
 content = content.replace(old, new, 1)
-with open(f, 'w') as fh:
+with open(sys.argv[1], 'w') as fh:
     fh.write(content)
-" "$NETWORK_FILE"
-    echo "  → 02_network MAC fix patched"
+PYEOF
+    echo "  → 02_network MAC fix patched (Factory 0xe000)"
   else
     echo "  → 02_network MAC fix already present (skipping)"
   fi
