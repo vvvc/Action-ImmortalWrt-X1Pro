@@ -12,11 +12,21 @@ echo "=== DIY Part 1: X1 Pro setup ==="
 
 # 1. Clone third-party packages into package/ (参照 TR3000)
 #    直接 clone 避免 feeds 分支/index 问题
+#    注意：diy-part1.sh 已 clone 过这些包，这里跳过已存在的
 mkdir -p "$OPENWRT/package"
-git clone --depth=1 https://github.com/eamonxg/luci-theme-aurora "$OPENWRT/package/luci-theme-aurora"
-git clone --depth=1 https://github.com/eamonxg/luci-app-aurora-config "$OPENWRT/package/luci-app-aurora-config"
-git clone --depth=1 https://github.com/timsaya/luci-app-bandix  "$OPENWRT/package/luci-app-bandix"
-git clone --depth=1 https://github.com/timsaya/openwrt-bandix  "$OPENWRT/package/openwrt-bandix"
+clone_if_missing() {
+  local url="$1" dest="$2"
+  if [ ! -d "$dest" ]; then
+    git clone --depth=1 "$url" "$dest"
+    echo "  → cloned $(basename "$dest")"
+  else
+    echo "  → $(basename "$dest") already exists, skipping"
+  fi
+}
+clone_if_missing https://github.com/eamonxg/luci-theme-aurora "$OPENWRT/package/luci-theme-aurora"
+clone_if_missing https://github.com/eamonxg/luci-app-aurora-config "$OPENWRT/package/luci-app-aurora-config"
+clone_if_missing https://github.com/timsaya/luci-app-bandix "$OPENWRT/package/luci-app-bandix"
+clone_if_missing https://github.com/timsaya/openwrt-bandix "$OPENWRT/package/openwrt-bandix"
 echo "  → aurora packages cloned"
 
 # 1b. Fix bandix Makefile: 将 zoneinfo-all 替换为本地 x1pro-zoneinfo

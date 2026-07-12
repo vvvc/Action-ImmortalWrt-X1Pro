@@ -23,7 +23,7 @@ if [ -d "$GITHUB_WORKSPACE/package/luci-compat-keep" ]; then
   cp -r "$GITHUB_WORKSPACE/package/luci-compat-keep" package/
 fi
 
-git clone https://github.com/eamonxg/luci-theme-aurora package/luci-theme-aurora
-git clone https://github.com/eamonxg/luci-app-aurora-config package/luci-app-aurora-config
-git clone https://github.com/timsaya/luci-app-bandix package/luci-app-bandix
-git clone https://github.com/timsaya/openwrt-bandix package/openwrt-bandix
+git clone --depth=1 https://github.com/eamonxg/luci-theme-aurora package/luci-theme-aurora
+git clone --depth=1 https://github.com/eamonxg/luci-app-aurora-config package/luci-app-aurora-config
+git clone --depth=1 https://github.com/timsaya/luci-app-bandix package/luci-app-bandix
+git clone --depth=1 https://github.com/timsaya/openwrt-bandix package/openwrt-bandix
