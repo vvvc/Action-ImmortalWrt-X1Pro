@@ -18,7 +18,7 @@
 #echo 'src-git passwall https://github.com/xiaorouji/openwrt-passwall' >>feeds.conf.default
 
 mkdir -p package
-Copy custom local packages into OpenWrt tree so they are available during build
+# Copy custom local packages into OpenWrt tree so they are available during build
 if [ -d "$GITHUB_WORKSPACE/package/luci-compat-keep" ]; then
   cp -r "$GITHUB_WORKSPACE/package/luci-compat-keep" package/
 fi

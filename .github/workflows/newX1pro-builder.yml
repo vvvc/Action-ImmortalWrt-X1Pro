@@ -1,4 +1,4 @@
-name: ImmortalWrt Builder
+name: Oray X1Pro Builder
 
 permissions:
   contents: write
@@ -12,9 +12,8 @@ on:
         description: '编译设备型号'
         required: true
         type: choice
-        default: 'all'
+        default: '128M-Ubootmod'
         options:
-          - '256M'
           - '128M'
           - '128M-Ubootmod'
           - 'all' 
@@ -22,7 +21,7 @@ on:
         description: '指定源码仓库地址'
         required: true
         type: string
-        default: 'https://github.com/padavanonly/immortalwrt-mt798x-6.6'
+        default: 'https://github.com/yvzz/immortalwrt-mt798x-6.6'
       commit:
         description: '指定源码commit进行编译，留空拉取最新源码'
         required: false
@@ -89,7 +88,6 @@ jobs:
       - name: 🔧 Set device variables
         run: |
           case "$DEVICE_INPUT" in
-            "256M") echo "CONFIG_FILE=config/256m.config" >> $GITHUB_ENV ;;
             "128M") echo "CONFIG_FILE=config/128m.config" >> $GITHUB_ENV ;;
             "128M-Ubootmod") echo "CONFIG_FILE=config/128muboot.config" >> $GITHUB_ENV ;;
           esac
@@ -221,7 +219,7 @@ jobs:
         run: |
           # 1. 确定编译列表
           if [ "${DEVICE_INPUT}" = "all" ]; then
-            DEVICES="256M 128M 128M-Ubootmod"
+            DEVICES="128M 128M-Ubootmod"
           else
             DEVICES="${DEVICE_INPUT}"
           fi
@@ -235,7 +233,6 @@ jobs:
             
             # 2. 设置当前设备配置文件
             case "$DEV" in
-              "256M") CONFIG="config/256m.config" ;;
               "128M") CONFIG="config/128m.config" ;;
               "128M-Ubootmod") CONFIG="config/128muboot.config" ;;
             esac
