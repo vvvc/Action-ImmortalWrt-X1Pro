@@ -1,10 +1,21 @@
 // SPDX-License-Identifier: (GPL-2.0 OR MIT)
+//
+// Oray X1 Pro (128M NAND, ubootmod layout)
+// Hardware identical to Cudy TR3000 v1 (MT7981)
+// Partition layout aligned with uboot mtdparts:
+//   nmbm0:1024k(bl2),512k(u-boot-env),2048k(factory),2048k(fip),
+//          512k(bdinfo),2048k(kpanic),114688k(ubi_0)
+//
 
 /dts-v1/;
 #include <dt-bindings/leds/common.h>
 #include "mt7981.dtsi"
 
 / {
+	model = "oraybox_x1-pro";
+	compatible = "mediatek,mt7981", "mediatek,mt7981-rfb";
+
+
 	aliases {
 		label-mac-device = &gmac1;
 		led-boot = &led_sys_red;
@@ -18,10 +29,11 @@
 		stdout-path = "serial0:115200n8";
 	};
 
+	/* GPIO export for modem power control */
 	gpio-export {
 		compatible = "gpio-export";
 
-		modem-power {
+		modem_power {
 			gpio-export,name = "modem_power";
 			gpio-export,output = <0>;
 			gpios = <&pio 9 GPIO_ACTIVE_LOW>;
@@ -76,13 +88,13 @@
 	pinctrl-0 = <&mdio_pins>;
 	status = "okay";
 
-		gmac0: mac@0 {
+	gmac0: mac@0 {
 		compatible = "mediatek,eth-mac";
 		reg = <0>;
 		phy-mode = "2500base-x";
 		phy-handle = <&phy1>;
 		nvmem-cell-names = "mac-address";
-		nvmem-cells = <&macaddr_factory_e000 0>;  
+		nvmem-cells = <&macaddr_bdinfo_de00 1>;
 	};
 
 	gmac1: mac@1 {
@@ -91,7 +103,7 @@
 		phy-mode = "gmii";
 		phy-handle = <&int_gbe_phy>;
 		nvmem-cell-names = "mac-address";
-		nvmem-cells = <&macaddr_factory_e000 1>; 
+		nvmem-cells = <&macaddr_bdinfo_de00 0>;
 	};
 };
 
@@ -123,6 +135,19 @@
 		spi-tx-bus-width = <4>;
 		spi-rx-bus-width = <4>;
 
+		/* SPI NAND calibration — from TR3000, verified working */
+		spi-cal-enable;
+		spi-cal-mode = "read-data";
+		spi-cal-datalen = <7>;
+		spi-cal-data = /bits/ 8 <0x53 0x50 0x49 0x4E 0x41 0x4E 0x44>;
+		spi-cal-addrlen = <5>;
+		spi-cal-addr = /bits/ 32 <0x0 0x0 0x0 0x0 0x0>;
+
+		/* NMBM for bad block management */
+		mediatek,nmbm;
+		mediatek,bmt-max-ratio = <1>;
+		mediatek,bmt-max-reserved-blocks = <64>;
+
 		partitions {
 			compatible = "fixed-partitions";
 			#address-cells = <1>;
@@ -152,14 +177,6 @@
 
 					eeprom_factory_0: eeprom@0 {
 						reg = <0x0 0x1000>;
-					};
-
-					macaddr_factory_04: macaddr@4 {
-						reg = <0x4 0x6>;
-					};
-
-					macaddr_factory_e000: macaddr@e000 {
-						reg = <0xe000 0x6>;
 					};
 				};
 			};
@@ -193,10 +210,10 @@
 				reg = <0x600000 0x200000>;
 			};
 
-			ubi: partition@800000 {
-				label = "ubi";
-				reg = <0x800000 0x7000000>;
+			ubi_0: partition@800000 {
+				label = "ubi_0";
 				compatible = "linux,ubi";
+				reg = <0x800000 0x7000000>;
 			};
 		};
 	};
@@ -220,7 +237,11 @@
 };
 
 &wifi {
-    status = "okay";
-    nvmem-cells = <&eeprom_factory_0>, <&macaddr_factory_04>;
-    nvmem-cell-names = "eeprom", "mac-address";
+	status = "okay";
+	nvmem-cells = <&eeprom_factory_0>;
+	nvmem-cell-names = "eeprom";
+};
+
+&ubi_0 {
+	reg = <0x800000 0x7000000>;
 };
