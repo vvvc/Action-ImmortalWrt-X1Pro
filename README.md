@@ -27,8 +27,6 @@
 
 编译自 https://github.com/weekdaycare/bl-mt798x-dhcpd 感谢大佬开源，兼容新 flash
 
-![](/uboot.png)
-
 128M uboot 为三分区 uboot 支持原厂 ubi 大小 64MB，扩容 ubi 分区 112MB，最大 ubi 分区 122MB
 
 256M uboot 为单分区 uboot
