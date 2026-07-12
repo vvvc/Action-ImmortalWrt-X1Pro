@@ -115,3 +115,19 @@ PYEOF
 fi
 
 echo "=== DIY Part 1 done ==="
+
+# 7. 移除 MT7915 warp_proxy 代码（X1 Pro 使用 MT7976CN，不需要 MT7915）
+#    原因：padavanonly 仓库缺少 mt7915_cr.h，导致 warp_proxy 编译失败
+WARP_CHIPS="$OPENWRT/package/mtk/drivers/mt_wifi/src/mt_wifi/embedded/plug_in/warp_proxy/chips"
+WARP_MAKE="$OPENWRT/package/mtk/drivers/mt_wifi/src/mt_wifi/embedded/plug_in/warp_proxy/Makefile"
+if [ -d "$WARP_CHIPS" ]; then
+    rm -f "$WARP_CHIPS/warp_wifi_mt7915.c"
+    rm -f "$WARP_CHIPS/warp_wifi_mt7915.h"
+    echo "  → Removed MT7915 warp_proxy source files"
+fi
+# 从 Makefile 中移除 MT7915 编译选项
+if [ -f "$WARP_MAKE" ]; then
+    sed -i '' -e '/CONFIG_CHIP_MT7915/,+2d' "$WARP_MAKE" 2>/dev/null || \
+    sed -i '/CONFIG_CHIP_MT7915/,+2d' "$WARP_MAKE" 2>/dev/null || true
+    echo "  → Removed MT7915 from warp_proxy Makefile"
+fi

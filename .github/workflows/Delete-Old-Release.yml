@@ -3,7 +3,6 @@ name: Delete Old Release
 on:
   workflow_dispatch:
     inputs:
-
       # ─── 清理对象 ───
       do_tags:
         description: '清理孤立 Tag（无关联 Release 的 Tag）'
