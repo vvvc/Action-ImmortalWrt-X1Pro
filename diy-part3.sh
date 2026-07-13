@@ -96,24 +96,8 @@ $(eval $(call BuildPackage,x1pro-zoneinfo))
 MAKEFILE_EOF
 echo "  → x1pro-zoneinfo metapackage created"
 
-# 2. Copy DTS files
-DTS_DIR="$OPENWRT/target/linux/mediatek/files/arch/arm64/boot/dts/mediatek/"
-mkdir -p "$DTS_DIR"
-
-for f in mt7981b-oray-x1pro-v1.dtsi mt7981b-oray-x1pro-v1.dts mt7981b-oray-x1pro-v1-ubootmod.dts; do
-  if [ -f "$WORKSPACE/$f" ]; then
-    cp "$WORKSPACE/$f" "$DTS_DIR"
-    echo "  → $f"
-  fi
-done
-
-# 3. Patch filogic.mk
-if [ -f "$WORKSPACE/filogic.mk" ]; then
-  # 注意：OpenWrt 实际 include 的是 target/linux/mediatek/image/filogic.mk
-  # （target/linux/mediatek/filogic.mk 不存在、不被 include，复制到那里无效）
-  cp "$WORKSPACE/filogic.mk" "$OPENWRT/target/linux/mediatek/image/filogic.mk"
-  echo "  → filogic.mk patched"
-fi
+# 2 & 3. DTS/dtsi 与 filogic.mk 已合入上游源码（yvzz/immortalwrt-mt798x-6.6），
+#    不再需要从本仓库复制/覆盖，避免用旧版本回退上游改动。
 
 # 4. Patch upstream 02_network — X1 Pro 接口定义（幂等）
 #    X1 Pro: eth1=LAN, eth0=WAN（与 TR3000 相同）
