@@ -109,7 +109,9 @@ done
 
 # 3. Patch filogic.mk
 if [ -f "$WORKSPACE/filogic.mk" ]; then
-  cp "$WORKSPACE/filogic.mk" "$OPENWRT/target/linux/mediatek/filogic.mk"
+  # 注意：OpenWrt 实际 include 的是 target/linux/mediatek/image/filogic.mk
+  # （target/linux/mediatek/filogic.mk 不存在、不被 include，复制到那里无效）
+  cp "$WORKSPACE/filogic.mk" "$OPENWRT/target/linux/mediatek/image/filogic.mk"
   echo "  → filogic.mk patched"
 fi
 
