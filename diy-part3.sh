@@ -29,72 +29,16 @@ clone_if_missing https://github.com/timsaya/luci-app-bandix "$OPENWRT/package/lu
 clone_if_missing https://github.com/timsaya/openwrt-bandix "$OPENWRT/package/openwrt-bandix"
 echo "  → aurora packages cloned"
 
-# 1b. Fix bandix Makefile: 将 zoneinfo-all 替换为本地 x1pro-zoneinfo
+# 1b. Fix bandix Makefile: 将 zoneinfo-all 改为 zoneinfo-asia（.config 已启用）
 BANDIX_MK="$OPENWRT/package/openwrt-bandix/openwrt-bandix/Makefile"
 if [ -f "$BANDIX_MK" ]; then
   if grep -q 'zoneinfo-all' "$BANDIX_MK"; then
-    sed -i 's/zoneinfo-all/x1pro-zoneinfo/g' "$BANDIX_MK"
-    echo "  → bandix Makefile: zoneinfo-all → x1pro-zoneinfo"
+    sed -i 's/zoneinfo-all/zoneinfo-asia/g' "$BANDIX_MK"
+    echo "  → bandix Makefile: zoneinfo-all → zoneinfo-asia"
   else
-    echo "  → bandix Makefile: already using x1pro-zoneinfo or no zoneinfo dep"
+    echo "  → bandix Makefile: already updated or no zoneinfo dep"
   fi
 fi
-
-# 1c. 更新 .config: 旧配置的 zoneinfo-all → x1pro-zoneinfo（避免 kconfig 递归冲突）
-if [ -f "$OPENWRT/.config" ]; then
-  if grep -q 'CONFIG_PACKAGE_zoneinfo-all' "$OPENWRT/.config"; then
-    sed -i 's/CONFIG_PACKAGE_zoneinfo-all=y/CONFIG_PACKAGE_x1pro-zoneinfo=y/' "$OPENWRT/.config"
-    # 清理所有多余 zoneinfo 包（仅保留 asia + core + simple）
-    for pkg in zoneinfo-africa zoneinfo-america zoneinfo-atlantic \
-               zoneinfo-australia-nz zoneinfo-europe zoneinfo-indian \
-               zoneinfo-pacific zoneinfo-poles; do
-      sed -i "/CONFIG_PACKAGE_${pkg}=y/d" "$OPENWRT/.config"
-    done
-    echo "  → .config: zoneinfo-all → x1pro-zoneinfo, redundant zones removed"
-  else
-    echo "  → .config: already updated or no zoneinfo-all entry"
-  fi
-fi
-
-# 1d. 创建 x1pro-zoneinfo 本地 metapackage（bandix 依赖它）
-#    注意：命名需与 feeds 现有包区分，使用 x1pro- 前缀避免 kconfig 递归冲突
-mkdir -p "$OPENWRT/package/x1pro-zoneinfo"
-cat > "$OPENWRT/package/x1pro-zoneinfo/Makefile" << 'MAKEFILE_EOF'
-include $(TOPDIR)/rules.mk
-
-PKG_NAME:=x1pro-zoneinfo
-PKG_VERSION:=1
-PKG_RELEASE:=1
-
-include $(INCLUDE_DIR)/package.mk
-
-define Package/x1pro-zoneinfo
-  SECTION:=utils
-  CATEGORY:=Utilities
-  TITLE:=Asia timezones (metapackage for X1Pro)
-  DEPENDS:= \
-	+zoneinfo-core \
-	+zoneinfo-simple \
-	+zoneinfo-asia
-  PKGARCH:=all
-endef
-
-define Package/x1pro-zoneinfo/description
-  Meta-package that depends on Asia zoneinfo sets (X1Pro build)
-endef
-
-define Build/Configure
-endef
-define Build/Compile
-endef
-
-define Package/x1pro-zoneinfo/install
-	$(INSTALL_DIR) $(1)
-endef
-
-$(eval $(call BuildPackage,x1pro-zoneinfo))
-MAKEFILE_EOF
-echo "  → x1pro-zoneinfo metapackage created"
 
 
 
