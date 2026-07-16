@@ -96,83 +96,38 @@ $(eval $(call BuildPackage,x1pro-zoneinfo))
 MAKEFILE_EOF
 echo "  → x1pro-zoneinfo metapackage created"
 
-# 2 & 3. DTS/dtsi 与 filogic.mk 已合入上游源码（yvzz/immortalwrt-mt798x-6.6），
-#    不再需要从本仓库复制/覆盖，避免用旧版本回退上游改动。
 
-# 4. Patch upstream 02_network — X1 Pro 接口定义（幂等）
-#    X1 Pro: eth1=LAN, eth0=WAN（与 TR3000 相同）
-NETWORK_FILE="$OPENWRT/target/linux/mediatek/filogic/base-files/etc/board.d/02_network"
-if [ -f "$NETWORK_FILE" ]; then
-  if ! grep -q "oray,x1pro-v1|\\\\" "$NETWORK_FILE"; then
-    python3 -c '
-import sys
-f = sys.argv[1]
-with open(f) as fh:
-    content = fh.read()
-old = "\tcudy,tr3000-v1-ubootmod|\\\n"
-new = old + "\toray,x1pro-v1|\\\n\toray,x1pro-v1-ubootmod|\\\n"
-content = content.replace(old, new, 1)
-with open(f, "w") as fh:
-    fh.write(content)
-' "$NETWORK_FILE"
-    echo "  → 02_network patched (X1 Pro interfaces added)"
-  else
-    echo "  → 02_network already has X1 Pro entries (skipping)"
-  fi
-else
-  echo "  ⚠ 02_network not found at $NETWORK_FILE"
-fi
 
-# 5. Patch platform.sh — sysupgrade 支持（幂等）
-PLATFORM_FILE="$OPENWRT/target/linux/mediatek/filogic/base-files/lib/upgrade/platform.sh"
-if [ -f "$PLATFORM_FILE" ]; then
-  if ! grep -q "oray,x1pro-v1-ubootmod|\\\\" "$PLATFORM_FILE"; then
-    python3 -c '
-import sys
-f = sys.argv[1]
-with open(f) as fh:
-    content = fh.read()
-old = "\tcudy,wbr3000uax-v1-ubootmod|\\\n"
-new = old + "\toray,x1pro-v1-ubootmod|\\\n"
-content = content.replace(old, new, 1)
-with open(f, "w") as fh:
-    fh.write(content)
-' "$PLATFORM_FILE"
-    echo "  → platform.sh patched"
-  else
-    echo "  → platform.sh already has X1 Pro entry (skipping)"
-  fi
-fi
-
-# 6. Patch 02_network — MAC 设置修复（幂等，原生 bash，无需外部 py 脚本）
-#    内核 DSA 驱动通过 nvmem 读取 eth0/eth1 MAC 失败（返回全 FF），
-#    在 exit 0 前注入 case 块，从 Factory 分区 offset 0xe000 读 MAC 并覆盖。
-if [ -f "$NETWORK_FILE" ]; then
-  if ! grep -q "X1 Pro MAC fix" "$NETWORK_FILE"; then
-    awk -v marker='X1 Pro MAC fix' '
-/^exit 0$/ && !done {
-    print "# " marker ": read MAC from Factory partition offset 0xe000"
-    print "# eth0 (WAN) = base MAC, eth1 (LAN) = base MAC + 1"
-    print "case $board in"
-    print "oray,x1pro-v1|oray,x1pro-v1-ubootmod)"
-    print "\t_x1_wan=$(mtd_get_mac_binary Factory 0xe000)"
-    print "\tif [ -n \"$_x1_wan\" ]; then"
-    print "\t\tip link set eth0 address \"$_x1_wan\" 2>/dev/null"
-    print "\t\tip link set eth1 address \"$(macaddr_add \"$_x1_wan\" 1)\" 2>/dev/null"
-    print "\tfi"
-    print "\t;;"
-    print "esac"
-    print ""
-    print "exit 0"
-    done=1
-    next
-}
-{ print }
-' "$NETWORK_FILE" > "${NETWORK_FILE}.tmp" && mv "${NETWORK_FILE}.tmp" "$NETWORK_FILE"
-    echo "  → 02_network MAC fix patched (inline awk)"
-  else
-    echo "  → 02_network MAC fix already present (skipping)"
-  fi
-fi
+# 6. [注释] Patch 02_network — MAC 设置修复
+# 上游 mediatek_setup_macs() 已通过 mtd_get_mac_binary Factory 0xe000 读取 MAC，
+# 不再需要本地注入。待编译验证后确认删除。
+#NETWORK_FILE="$OPENWRT/target/linux/mediatek/filogic/base-files/etc/board.d/02_network"
+#if [ -f "$NETWORK_FILE" ]; then
+#  if ! grep -q "X1 Pro MAC fix" "$NETWORK_FILE"; then
+#    awk -v marker='X1 Pro MAC fix' '
+#/^exit 0$/ && !done {
+#    print "# " marker ": read MAC from Factory partition offset 0xe000"
+#    print "# eth0 (WAN) = base MAC, eth1 (LAN) = base MAC + 1"
+#    print "case $board in"
+#    print "oray,x1pro-v1|oray,x1pro-v1-ubootmod)"
+#    print "\t_x1_wan=$(mtd_get_mac_binary Factory 0xe000)"
+#    print "\tif [ -n \"$_x1_wan\" ]; then"
+#    print "\t\tip link set eth0 address \"$_x1_wan\" 2>/dev/null"
+#    print "\t\tip link set eth1 address \"$(macaddr_add \"$_x1_wan\" 1)\" 2>/dev/null"
+#    print "\tfi"
+#    print "\t;;"
+#    print "esac"
+#    print ""
+#    print "exit 0"
+#    done=1
+#    next
+#}
+#{ print }
+#' "$NETWORK_FILE" > "${NETWORK_FILE}.tmp" && mv "${NETWORK_FILE}.tmp" "$NETWORK_FILE"
+#    echo "  → 02_network MAC fix patched (inline awk)"
+#  else
+#    echo "  → 02_network MAC fix already present (skipping)"
+#  fi
+#fi
 
 echo "=== DIY Part 1 done ==="
