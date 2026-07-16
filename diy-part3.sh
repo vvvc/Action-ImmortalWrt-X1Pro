@@ -144,14 +144,32 @@ with open(f, "w") as fh:
   fi
 fi
 
-# 6. Patch 02_network — MAC 设置修复（幂等）
+# 6. Patch 02_network — MAC 设置修复（幂等，原生 bash，无需外部 py 脚本）
 #    内核 DSA 驱动通过 nvmem 读取 eth0/eth1 MAC 失败（返回全 FF），
-#    导致 eth0/eth1 显示全 FF。直接读 bdinfo 覆盖（wan_mac/lan_mac 是 local 变量不可见）。
-#    使用独立 Python 脚本文件代替 heredoc 内联，避免 tab/backslash 转义歧义。
+#    在 exit 0 前注入 case 块，从 Factory 分区 offset 0xe000 读 MAC 并覆盖。
 if [ -f "$NETWORK_FILE" ]; then
   if ! grep -q "X1 Pro MAC fix" "$NETWORK_FILE"; then
-    python3 "$WORKSPACE/_x1pro_macfix.py" "$NETWORK_FILE"
-    echo "  → 02_network MAC fix patched"
+    awk -v marker='X1 Pro MAC fix' '
+/^exit 0$/ && !done {
+    print "# " marker ": read MAC from Factory partition offset 0xe000"
+    print "# eth0 (WAN) = base MAC, eth1 (LAN) = base MAC + 1"
+    print "case $board in"
+    print "oray,x1pro-v1|oray,x1pro-v1-ubootmod)"
+    print "\t_x1_wan=$(mtd_get_mac_binary Factory 0xe000)"
+    print "\tif [ -n \"$_x1_wan\" ]; then"
+    print "\t\tip link set eth0 address \"$_x1_wan\" 2>/dev/null"
+    print "\t\tip link set eth1 address \"$(macaddr_add \"$_x1_wan\" 1)\" 2>/dev/null"
+    print "\tfi"
+    print "\t;;"
+    print "esac"
+    print ""
+    print "exit 0"
+    done=1
+    next
+}
+{ print }
+' "$NETWORK_FILE" > "${NETWORK_FILE}.tmp" && mv "${NETWORK_FILE}.tmp" "$NETWORK_FILE"
+    echo "  → 02_network MAC fix patched (inline awk)"
   else
     echo "  → 02_network MAC fix already present (skipping)"
   fi
