@@ -39,11 +39,6 @@ on:
         required: false
         type: boolean
         default: true
-      prerelease:
-        description: '是否发布为预发布版本 (Pre-release)'
-        required: false
-        type: boolean
-        default: false
       verbose:
         description: '详细编译日志 (V=s, 单线程编译输出完整日志)'
         required: false
@@ -66,7 +61,6 @@ env:
   DIY_P1_SH: diy-part1.sh
   DIY_P2_SH: diy-part2.sh
   UPLOAD_RELEASE: ${{ github.event.inputs.release || github.event.client_payload.release }}
-  PRERELEASE: ${{ github.event.inputs.prerelease }}
   UPLOAD_ARTIFACT: ${{ github.event.inputs.upload_artifact }}
   VERBOSE: ${{ github.event.inputs.verbose }}
   TZ: Asia/Shanghai
@@ -348,7 +342,6 @@ jobs:
         with:
           tag_name: ${{ steps.tag.outputs.release_tag }}
           body_path: release.txt
-          prerelease: ${{ env.PRERELEASE == 'true' }}
           files: ${{ github.workspace }}/firmware_collection/*
 
       - name: 🚧 Delete old workflow runs
